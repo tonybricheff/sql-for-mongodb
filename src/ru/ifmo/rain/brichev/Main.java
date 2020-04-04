@@ -10,11 +10,14 @@ public class Main {
     static class Translator {
         private int selectPosition;
         private int fromPosition;
+        private int limitPosition;
+        private int offsetPosition;
 
         private void parseMainOperators(String sqlCommand) {
             selectPosition = sqlCommand.indexOf("SELECT");
             fromPosition = sqlCommand.indexOf("FROM");
-
+            limitPosition = sqlCommand.indexOf("LIMIT");
+            offsetPosition = sqlCommand.indexOf("OFFSET");
         }
 
         private List<String> getColumns(String sqlCommand) {
@@ -25,8 +28,8 @@ public class Main {
             return columns;
         }
 
-        private String getTableName(String sqlCommand) {
-            StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(fromPosition + 5));
+        private String parseToken(String sqlCommand, int position) {
+            StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(position));
             return stringTokenizer.nextToken();
         }
 
@@ -38,20 +41,27 @@ public class Main {
             mongoCommand.append("})");
         }
 
-        private String createMongoFind(String tableName, List<String> columns) {
+
+        private String createMongoFind(String sqlCommand, String tableName, List<String> columns) {
             StringBuilder mongoCommand = new StringBuilder();
             mongoCommand.append("db.").append(tableName).append(".find({}");
             if (!columns.get(0).equals("*")) {
                 addColumns(mongoCommand, columns);
             } else
                 mongoCommand.append(")");
+            if (offsetPosition != -1)
+                mongoCommand.append(".skip(").append(parseToken(sqlCommand, offsetPosition + 6)).append(")");
+            if (limitPosition != -1)
+                mongoCommand.append(".limit(").append(parseToken(sqlCommand, limitPosition + 5)).append(")");
+
             return mongoCommand.toString();
 
         }
 
+
         public void convert(String sqlCommand) {
             parseMainOperators(sqlCommand);
-            System.out.println(createMongoFind(getTableName(sqlCommand), getColumns(sqlCommand)));
+            System.out.println(createMongoFind(sqlCommand, parseToken(sqlCommand, fromPosition + 5), getColumns(sqlCommand)));
 
 
         }
@@ -63,7 +73,7 @@ public class Main {
     public static void main(String[] args) {
         Translator translator = new Translator();
         translator.convert("SELECT name, surname, job FROM workers");
-        translator.convert("SELECT * FROM sales ");
+        translator.convert("SELECT name FROM collection OFFSET 5 LIMIT 10");
 
 
     }
