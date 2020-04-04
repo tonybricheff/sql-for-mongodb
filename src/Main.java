@@ -1,13 +1,7 @@
-package ru.ifmo.rain.brichev;
-
-import com.sun.jdi.request.InvalidRequestStateException;
-
-import javax.naming.OperationNotSupportedException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.prefs.InvalidPreferencesFormatException;
 
 
 public class Main {
@@ -18,6 +12,14 @@ public class Main {
         private int limitPosition;
         private int offsetPosition;
         private int wherePosition;
+
+        Translator() {
+            this.selectPosition = -1;
+            this.fromPosition = -1;
+            this.limitPosition = -1;
+            this.offsetPosition = -1;
+            this.wherePosition = -1;
+        }
 
         private void parseOperators(String sqlCommand) throws SQLException {
             selectPosition = sqlCommand.indexOf("SELECT");
@@ -40,11 +42,25 @@ public class Main {
             return columns;
         }
 
+        private int findLastPosition(String sqlCommand) {
+            if (offsetPosition != -1 && limitPosition != -1) {
+                return Math.min(offsetPosition, limitPosition);
+            } else if (offsetPosition != -1) {
+                return offsetPosition;
+            } else if (limitPosition != 1) {
+                return limitPosition;
+            } else
+                return sqlCommand.length() - 1;
+        }
+
+
         private List<String> getPredicates(String sqlCommand) {
             List<String> predicates = new ArrayList<>();
-            StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(wherePosition + 5), " AND");
+            StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(wherePosition + 5, findLastPosition(sqlCommand)), " AND");
+
             while (stringTokenizer.hasMoreTokens())
                 predicates.add(stringTokenizer.nextToken());
+            System.out.println(predicates);
             return predicates;
         }
 
@@ -132,7 +148,7 @@ public class Main {
         translator.convert("SELECT name, surname, job FROM workers");
         translator.convert("SELECT name FROM collection OFFSET 5 LIMIT 10");
         translator.convert("SELECT * FROM customers WHERE age > 22 AND name = 'Vasya' AND age <> 35 AND salary < 455 OFFSET 10 LIMIT 50");
-
+        translator.convert("SELECT age FROM customers WHERE age > 22 AND name = 'Vasya' AND age <> 35 AND salary < 455 OFFSET 10");
 
     }
 }
