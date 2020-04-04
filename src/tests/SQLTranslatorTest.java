@@ -14,7 +14,7 @@ class SQLTranslatorTest {
     }
 
     @Test
-    public void generalTests() {
+    public void generalTest() {
         Assertions.assertEquals("db.tests.find({})", sqlTranslator.convert("SELECT * FROM tests"));
         Assertions.assertEquals("db.collection.find({}, {name: 1, surname: 1})", sqlTranslator.convert("SELECT name, surname FROM collection"));
         Assertions.assertEquals("db.collection.find({}, {name: 1, surname: 1, job: 1, salary: 1})", sqlTranslator.convert("SELECT name, surname, job, salary FROM collection"));
@@ -41,5 +41,15 @@ class SQLTranslatorTest {
         Assertions.assertEquals("db.customers.find({age: {$lt: 22}, name: {$ne: '123'}, salary: {$gt: 500}, job: 'Teacher'})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> '123' AND salary > 500 AND job = 'Teacher'"));
     }
 
+    @Test
+    public void mixedTest() {
+        Assertions.assertEquals("db.customers.find({age: {$gt: 22}, name: 'Vasya'}, {name: 1, age: 1}).skip(50).limit(10)", sqlTranslator.convert("SELECT name, age FROM customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
+    }
+
+    @Test
+    public void invalidCommandTest(){
+        Assertions.assertEquals("", sqlTranslator.convert("name, age FROM customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
+        Assertions.assertEquals("", sqlTranslator.convert("SELECT name, age customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
+    }
 
 }
