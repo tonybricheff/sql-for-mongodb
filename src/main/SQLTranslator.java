@@ -6,12 +6,15 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 public class SQLTranslator {
+
+    // positions of operators
     private int selectPosition;
     private int fromPosition;
     private int limitPosition;
     private int offsetPosition;
     private int wherePosition;
 
+    // public constructor
     public SQLTranslator() {
         this.selectPosition = -1;
         this.fromPosition = -1;
@@ -20,7 +23,12 @@ public class SQLTranslator {
         this.wherePosition = -1;
     }
 
-    private void parseOperators(String sqlCommand) throws SQLException {
+
+    /*
+        finds operators positions and throw exception if there are no select or from operators
+     */
+
+    private void getOperatorsPositions(String sqlCommand) throws SQLException {
         selectPosition = sqlCommand.indexOf("SELECT");
         fromPosition = sqlCommand.indexOf("FROM");
         limitPosition = sqlCommand.indexOf("LIMIT");
@@ -33,6 +41,11 @@ public class SQLTranslator {
         }
     }
 
+
+    /*
+        parse command and returns list with names of columns after SELECT
+     */
+
     private List<String> getColumns(String sqlCommand) {
         List<String> columns = new ArrayList<>();
         StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(selectPosition + 6, fromPosition), " ,");
@@ -40,6 +53,11 @@ public class SQLTranslator {
             columns.add(stringTokenizer.nextToken());
         return columns;
     }
+
+
+    /*
+        finds a position where predicates ends
+     */
 
     private int findLastPosition(String sqlCommand) {
         if (offsetPosition != -1 && limitPosition != -1) {
@@ -53,6 +71,10 @@ public class SQLTranslator {
     }
 
 
+    /*
+        parse and returns predicates after WHERE
+     */
+
     private List<String> getPredicates(String sqlCommand) {
         List<String> predicates = new ArrayList<>();
         StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(wherePosition + 5, findLastPosition(sqlCommand)), " AND");
@@ -60,10 +82,13 @@ public class SQLTranslator {
         while (stringTokenizer.hasMoreTokens())
             predicates.add(stringTokenizer.nextToken());
 
-        //System.out.println(predicates);
-
         return predicates;
     }
+
+
+    /*
+        finds and returns necessary mongo command for sql predicate
+     */
 
     private String validatePredicate(String predicate, String value) throws UnsupportedOperationException {
         switch (predicate) {
@@ -80,11 +105,20 @@ public class SQLTranslator {
         }
     }
 
+
+    /*
+        parse and returns the next token after position
+     */
+
     private String parseToken(String sqlCommand, int position) {
         StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(position));
         return stringTokenizer.nextToken();
     }
 
+
+    /*
+        adds sql columns to MongoDB command
+     */
 
     private void addColumns(StringBuilder mongoCommand, List<String> columns) {
         mongoCommand.append(", {");
@@ -93,6 +127,11 @@ public class SQLTranslator {
         mongoCommand.deleteCharAt(mongoCommand.length() - 2).deleteCharAt(mongoCommand.length() - 1);
         mongoCommand.append("})");
     }
+
+
+    /*
+        adds predicates to MongoDB command
+     */
 
     private void addPredicates(StringBuilder mongoCommand, List<String> predicates) {
         for (int i = 0; i < predicates.size() - 2; i += 3) {
@@ -104,6 +143,10 @@ public class SQLTranslator {
         mongoCommand.append("}");
     }
 
+
+    /*
+        creates MongoDB find command from SQL command
+     */
 
     private String createMongoFind(String sqlCommand) {
         StringBuilder mongoCommand = new StringBuilder();
@@ -129,15 +172,19 @@ public class SQLTranslator {
     }
 
 
+    /*
+        shell of translator, gets SQL command and returns MongoDB command after translation
+     */
+
     public String convert(String sqlCommand) {
         try {
-            parseOperators(sqlCommand);
+            getOperatorsPositions(sqlCommand);
         } catch (SQLException e) {
             e.printStackTrace();
             return "";
         }
 
-       return createMongoFind(sqlCommand);
+        return createMongoFind(sqlCommand);
     }
 
 
