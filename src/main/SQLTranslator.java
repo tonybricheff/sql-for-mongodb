@@ -25,7 +25,7 @@ public class SQLTranslator {
 
 
     /*
-        finds operators positions and throw exception if there are no select or from operators
+        finds operators positions and throws exception if there are no select or from operators
      */
 
     private void getOperatorsPositions(String sqlCommand) throws SQLException {
