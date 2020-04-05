@@ -14,7 +14,7 @@ class SQLTranslatorTest {
     }
 
     @Test
-    public void generalTests() {
+    public void generalTest() {
         Assertions.assertEquals("db.tests.find({})", sqlTranslator.convert("SELECT * FROM tests"));
         Assertions.assertEquals("db.collection.find({}, {name: 1, surname: 1})", sqlTranslator.convert("SELECT name, surname FROM collection"));
         Assertions.assertEquals("db.collection.find({}, {name: 1, surname: 1, job: 1, salary: 1})", sqlTranslator.convert("SELECT name, surname, job, salary FROM collection"));
@@ -36,10 +36,39 @@ class SQLTranslatorTest {
 
     @Test
     public void whereTest() {
-        Assertions.assertEquals("db.customers.find({age: {$gt: 22}, name: 'Vasya'})", sqlTranslator.convert("SELECT * FROM customers WHERE age > 22 AND name = 'Vasya'"));
-        Assertions.assertEquals("db.customers.find({age: {$lt: 22}, name: {$ne: 'Vasya'}})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> 'Vasya'"));
-        Assertions.assertEquals("db.customers.find({age: {$lt: 22}, name: {$ne: 'Vasya'}, salary: {$gt: 500}, job: 'Teacher'})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> 'Vasya' AND salary > 500 AND job = 'Teacher'"));
+        Assertions.assertEquals("db.customers.find({name: 'Vasya', age: {$gt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age > 22 AND name = 'Vasya'"));
+        Assertions.assertEquals("db.customers.find({name: {$ne: 'Petya'}, age: {$lt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> 'Petya'"));
+        Assertions.assertEquals("db.customers.find({name: {$ne: '123'}, salary: {$gt: 500}, job: 'Teacher', age: {$lt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> '123' AND salary > 500 AND job = 'Teacher'"));
+        Assertions.assertEquals("db.customers.find({age: {$gt: 22, $lt: 50, $ne: 30}}, {age: 1})", sqlTranslator.convert("SELECT age FROM customers WHERE age > 22 AND age < 50 AND age <> 30"));
+        Assertions.assertEquals("db.customers.find({name: 'Tony', age: {$gt: 22, $lt: 50, $ne: 30}}, {age: 1, name: 1})", sqlTranslator.convert("SELECT age, name FROM customers WHERE age > 22 AND age < 50 AND age <> 30 AND name = 'Tony'"));
+
+
     }
 
+    @Test
+    public void mixedTest() {
+        Assertions.assertEquals("db.customers.find({name: 'Vasya', age: {$gt: 22}}, {name: 1, age: 1}).skip(50).limit(10)", sqlTranslator.convert("SELECT name, age FROM customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
+    }
+
+    @Test
+    public void invalidCommandTest() {
+        Assertions.assertEquals("", sqlTranslator.convert("name, age FROM customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
+        Assertions.assertEquals("", sqlTranslator.convert("SELECT name, age customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
+    }
+
+    @Test
+    public void orderByTest() {
+        Assertions.assertEquals("db.people.find({status: 'GT'}).sort({user_id: -1})", sqlTranslator.convert("SELECT * FROM people WHERE status = 'GT' ORDER BY user_id DESC"));
+        Assertions.assertEquals("db.people.find({status: 'GT'}).sort({user_id: 1})", sqlTranslator.convert("SELECT * FROM people WHERE status = 'GT' ORDER BY user_id ASC"));
+        Assertions.assertEquals("db.people.find({age: {$ne: 30}, status: 'GT'}, {name: 1}).sort({user_id: -1})", sqlTranslator.convert("SELECT name FROM people WHERE status = 'GT' AND age <> 30 ORDER BY user_id DESC"));
+    }
+
+    @Test
+    public void countTest(){
+        Assertions.assertEquals("db.people.find({status: 'GT'}).sort({user_id: -1}).count()", sqlTranslator.convert("SELECT COUNT(*) FROM people WHERE status = 'GT' ORDER BY user_id DESC"));
+        Assertions.assertEquals("db.customers.find({age: {$gt: 22, $lt: 50, $ne: 30}}, {age: 1}).count()", sqlTranslator.convert("SELECT COUNT(age) FROM customers WHERE age > 22 AND age < 50 AND age <> 30"));
+        Assertions.assertEquals("db.customers.find({name: 'Tony', age: {$gt: 22, $lt: 50, $ne: 30}}, {age: 1, name: 1}).count()", sqlTranslator.convert("SELECT COUNT(age, name) FROM customers WHERE age > 22 AND age < 50 AND age <> 30 AND name = 'Tony'"));
+
+    }
 
 }
