@@ -1,6 +1,14 @@
 # sql-for-mongodb
-# JetBrains internship test assignment "Simple SQL-MongoDB translator"
+# Simple SQL-MongoDB translator
+JetBrains internship test assignment 
 
 
-### Supported operations
-
+### Supporting operations
+- SELECT, FROM
+- WHERE
+    * =, <, >, <>
+    * AND
+- OFFSET, LIMIT
+- ORDER BY 
+    * ASC, DESC
+- COUNT
