@@ -15,6 +15,7 @@ public class SQLTranslator {
     private int offsetPosition;
     private int wherePosition;
     private int orderByPosition;
+    private int countPosition;
 
 
     // public constructor
@@ -25,6 +26,7 @@ public class SQLTranslator {
         this.offsetPosition = -1;
         this.wherePosition = -1;
         this.orderByPosition = -1;
+        this.countPosition = -1;
     }
 
 
@@ -39,6 +41,7 @@ public class SQLTranslator {
         offsetPosition = sqlCommand.indexOf("OFFSET");
         wherePosition = sqlCommand.indexOf("WHERE");
         orderByPosition = sqlCommand.indexOf("ORDER BY");
+        countPosition = sqlCommand.indexOf("COUNT");
 
 
         if (selectPosition == -1 || fromPosition == -1) {
@@ -54,7 +57,12 @@ public class SQLTranslator {
 
     private List<String> getColumns(String sqlCommand) {
         List<String> columns = new ArrayList<>();
-        StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(selectPosition + 6, fromPosition), " ,");
+        StringTokenizer stringTokenizer;
+        if (countPosition != -1) {
+            stringTokenizer = new StringTokenizer(sqlCommand.substring(countPosition + 6, fromPosition), " ,)");
+        } else {
+            stringTokenizer = new StringTokenizer(sqlCommand.substring(selectPosition + 6, fromPosition), " ,");
+        }
         while (stringTokenizer.hasMoreTokens())
             columns.add(stringTokenizer.nextToken());
         return columns;
@@ -72,9 +80,9 @@ public class SQLTranslator {
             return offsetPosition;
         } else if (limitPosition != -1) {
             return limitPosition;
-        } else if(orderByPosition!= -1) {
+        } else if (orderByPosition != -1) {
             return orderByPosition;
-        }else {
+        } else {
             return sqlCommand.length();
         }
     }
@@ -92,9 +100,7 @@ public class SQLTranslator {
         while (stringTokenizer.hasMoreTokens()) {
             String param = stringTokenizer.nextToken();
             String operation = stringTokenizer.nextToken();
-            System.out.println(operation);
             String value = stringTokenizer.nextToken();
-            System.out.println(value);
             if (!predicates.containsKey(param)) {
                 List<PredicatePair> listOfPredicates = new ArrayList<>();
                 predicates.put(param, listOfPredicates);
@@ -194,6 +200,7 @@ public class SQLTranslator {
         } else {
             mongoCommand.append("}");
         }
+
         List<String> columns = getColumns(sqlCommand);
         if (!columns.get(0).equals("*")) {
             addColumns(mongoCommand, columns);
@@ -205,10 +212,15 @@ public class SQLTranslator {
             mongoCommand.append(".sort({").append(parseToken(sqlCommand, orderByPosition + 8)).append(": ").
                     append(sortingType).append("})");
         }
-        if (offsetPosition != -1)
+        if (offsetPosition != -1) {
             mongoCommand.append(".skip(").append(parseToken(sqlCommand, offsetPosition + 6)).append(")");
-        if (limitPosition != -1)
+        }
+        if (limitPosition != -1) {
             mongoCommand.append(".limit(").append(parseToken(sqlCommand, limitPosition + 5)).append(")");
+        }
+        if (countPosition != -1) {
+            mongoCommand.append(".count()");
+        }
 
         return mongoCommand.toString();
 

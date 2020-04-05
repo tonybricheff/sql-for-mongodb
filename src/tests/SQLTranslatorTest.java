@@ -63,4 +63,12 @@ class SQLTranslatorTest {
         Assertions.assertEquals("db.people.find({age: {$ne: 30}, status: 'GT'}, {name: 1}).sort({user_id: -1})", sqlTranslator.convert("SELECT name FROM people WHERE status = 'GT' AND age <> 30 ORDER BY user_id DESC"));
     }
 
+    @Test
+    public void countTest(){
+        Assertions.assertEquals("db.people.find({status: 'GT'}).sort({user_id: -1}).count()", sqlTranslator.convert("SELECT COUNT(*) FROM people WHERE status = 'GT' ORDER BY user_id DESC"));
+        Assertions.assertEquals("db.customers.find({age: {$gt: 22, $lt: 50, $ne: 30}}, {age: 1}).count()", sqlTranslator.convert("SELECT COUNT(age) FROM customers WHERE age > 22 AND age < 50 AND age <> 30"));
+        Assertions.assertEquals("db.customers.find({name: 'Tony', age: {$gt: 22, $lt: 50, $ne: 30}}, {age: 1, name: 1}).count()", sqlTranslator.convert("SELECT COUNT(age, name) FROM customers WHERE age > 22 AND age < 50 AND age <> 30 AND name = 'Tony'"));
+
+    }
+
 }
