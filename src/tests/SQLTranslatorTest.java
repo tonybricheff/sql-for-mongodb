@@ -39,6 +39,10 @@ class SQLTranslatorTest {
         Assertions.assertEquals("db.customers.find({name: 'Vasya', age: {$gt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age > 22 AND name = 'Vasya'"));
         Assertions.assertEquals("db.customers.find({name: {$ne: 'Petya'}, age: {$lt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> 'Petya'"));
         Assertions.assertEquals("db.customers.find({name: {$ne: '123'}, salary: {$gt: 500}, job: 'Teacher', age: {$lt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> '123' AND salary > 500 AND job = 'Teacher'"));
+        Assertions.assertEquals("db.customers.find({age: {$gt: 22, $lt: 50, $ne: 30}}, {age: 1})", sqlTranslator.convert("SELECT age FROM customers WHERE age > 22 AND age < 50 AND age <> 30"));
+        Assertions.assertEquals("db.customers.find({name: 'Tony', age: {$gt: 22, $lt: 50, $ne: 30}}, {age: 1, name: 1})", sqlTranslator.convert("SELECT age, name FROM customers WHERE age > 22 AND age < 50 AND age <> 30 AND name = 'Tony'"));
+
+
     }
 
     @Test

@@ -163,7 +163,8 @@ public class SQLTranslator {
                 for (PredicatePair parameters : predicate.getValue()) {
                     mongoCommand.append(validatePredicate(parameters.getOperation(), parameters.getValue())).append(", ");
                 }
-                mongoCommand.append("}");
+                mongoCommand.deleteCharAt(mongoCommand.length() - 2).deleteCharAt(mongoCommand.length() - 1);
+                mongoCommand.append("}, ");
             }
         }
 
