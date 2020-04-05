@@ -1,9 +1,10 @@
 package main;
 
+
+import main.models.PredicatePair;
+
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 
 public class SQLTranslator {
 
@@ -13,6 +14,7 @@ public class SQLTranslator {
     private int limitPosition;
     private int offsetPosition;
     private int wherePosition;
+
 
     // public constructor
     public SQLTranslator() {
@@ -75,12 +77,22 @@ public class SQLTranslator {
         parse and returns predicates after WHERE
      */
 
-    private List<String> getPredicates(String sqlCommand) {
-        List<String> predicates = new ArrayList<>();
+    private Map<String, List<PredicatePair>> getPredicates(String sqlCommand) {
+        Map<String, List<PredicatePair>> predicates = new HashMap<>();
+
         StringTokenizer stringTokenizer = new StringTokenizer(sqlCommand.substring(wherePosition + 5, findLastPosition(sqlCommand)), " AND");
 
-        while (stringTokenizer.hasMoreTokens())
-            predicates.add(stringTokenizer.nextToken());
+        while (stringTokenizer.hasMoreTokens()) {
+            String param = stringTokenizer.nextToken();
+            String operation = stringTokenizer.nextToken();
+            String value = stringTokenizer.nextToken();
+            if (!predicates.containsKey(param)) {
+                List<PredicatePair> listOfPredicates = new ArrayList<>();
+                predicates.put(param, listOfPredicates);
+            }
+            predicates.get(param).add(new PredicatePair(operation, value));
+        }
+
 
         return predicates;
     }
@@ -95,11 +107,11 @@ public class SQLTranslator {
             case "=":
                 return value;
             case ">":
-                return "{$gt: " + value + "}";
+                return "$gt: " + value;
             case "<":
-                return "{$lt: " + value + "}";
+                return "$lt: " + value;
             case "<>":
-                return "{$ne: " + value + "}";
+                return "$ne: " + value;
             default:
                 throw new UnsupportedOperationException();
         }
@@ -133,10 +145,26 @@ public class SQLTranslator {
         adds predicates to MongoDB command
      */
 
-    private void addPredicates(StringBuilder mongoCommand, List<String> predicates) {
-        for (int i = 0; i < predicates.size() - 2; i += 3) {
-            mongoCommand.append(predicates.get(i)).append(": ").append(validatePredicate(predicates.get(i + 1),
-                    predicates.get(i + 2))).append(", ");
+    private void addPredicates(StringBuilder mongoCommand, Map<String, List<PredicatePair>> predicates) {
+
+        for (Map.Entry<String, List<PredicatePair>> predicate : predicates.entrySet()) {
+            mongoCommand.append(predicate.getKey()).append(": ");
+
+            if (predicate.getValue().size() == 1) {
+                if (predicate.getValue().get(0).getOperation().equals("=")) {
+                    mongoCommand.append(validatePredicate(predicate.getValue().get(0).getOperation(),
+                            predicate.getValue().get(0).getValue())).append(", ");
+                } else {
+                    mongoCommand.append("{").append(validatePredicate(predicate.getValue().get(0).getOperation(),
+                            predicate.getValue().get(0).getValue())).append("}, ");
+                }
+            } else {
+                mongoCommand.append("{");
+                for (PredicatePair parameters : predicate.getValue()) {
+                    mongoCommand.append(validatePredicate(parameters.getOperation(), parameters.getValue())).append(", ");
+                }
+                mongoCommand.append("}");
+            }
         }
 
         mongoCommand.deleteCharAt(mongoCommand.length() - 2).deleteCharAt(mongoCommand.length() - 1);

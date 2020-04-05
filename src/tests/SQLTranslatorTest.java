@@ -36,14 +36,14 @@ class SQLTranslatorTest {
 
     @Test
     public void whereTest() {
-        Assertions.assertEquals("db.customers.find({age: {$gt: 22}, name: 'Vasya'})", sqlTranslator.convert("SELECT * FROM customers WHERE age > 22 AND name = 'Vasya'"));
-        Assertions.assertEquals("db.customers.find({age: {$lt: 22}, name: {$ne: 'Petya'}})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> 'Petya'"));
-        Assertions.assertEquals("db.customers.find({age: {$lt: 22}, name: {$ne: '123'}, salary: {$gt: 500}, job: 'Teacher'})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> '123' AND salary > 500 AND job = 'Teacher'"));
+        Assertions.assertEquals("db.customers.find({name: 'Vasya', age: {$gt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age > 22 AND name = 'Vasya'"));
+        Assertions.assertEquals("db.customers.find({name: {$ne: 'Petya'}, age: {$lt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> 'Petya'"));
+        Assertions.assertEquals("db.customers.find({name: {$ne: '123'}, salary: {$gt: 500}, job: 'Teacher', age: {$lt: 22}})", sqlTranslator.convert("SELECT * FROM customers WHERE age < 22 AND name <> '123' AND salary > 500 AND job = 'Teacher'"));
     }
 
     @Test
     public void mixedTest() {
-        Assertions.assertEquals("db.customers.find({age: {$gt: 22}, name: 'Vasya'}, {name: 1, age: 1}).skip(50).limit(10)", sqlTranslator.convert("SELECT name, age FROM customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
+        Assertions.assertEquals("db.customers.find({name: 'Vasya', age: {$gt: 22}}, {name: 1, age: 1}).skip(50).limit(10)", sqlTranslator.convert("SELECT name, age FROM customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
     }
 
     @Test
