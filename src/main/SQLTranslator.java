@@ -14,6 +14,7 @@ public class SQLTranslator {
     private int limitPosition;
     private int offsetPosition;
     private int wherePosition;
+    private int orderByPosition;
 
 
     // public constructor
@@ -23,6 +24,7 @@ public class SQLTranslator {
         this.limitPosition = -1;
         this.offsetPosition = -1;
         this.wherePosition = -1;
+        this.orderByPosition = -1;
     }
 
 
@@ -36,6 +38,8 @@ public class SQLTranslator {
         limitPosition = sqlCommand.indexOf("LIMIT");
         offsetPosition = sqlCommand.indexOf("OFFSET");
         wherePosition = sqlCommand.indexOf("WHERE");
+        orderByPosition = sqlCommand.indexOf("ORDER BY");
+
 
         if (selectPosition == -1 || fromPosition == -1) {
             System.out.println("Invalid command format");
@@ -68,8 +72,11 @@ public class SQLTranslator {
             return offsetPosition;
         } else if (limitPosition != -1) {
             return limitPosition;
-        } else
+        } else if(orderByPosition!= -1) {
+            return orderByPosition;
+        }else {
             return sqlCommand.length();
+        }
     }
 
 
@@ -85,7 +92,9 @@ public class SQLTranslator {
         while (stringTokenizer.hasMoreTokens()) {
             String param = stringTokenizer.nextToken();
             String operation = stringTokenizer.nextToken();
+            System.out.println(operation);
             String value = stringTokenizer.nextToken();
+            System.out.println(value);
             if (!predicates.containsKey(param)) {
                 List<PredicatePair> listOfPredicates = new ArrayList<>();
                 predicates.put(param, listOfPredicates);
@@ -190,6 +199,11 @@ public class SQLTranslator {
             addColumns(mongoCommand, columns);
         } else {
             mongoCommand.append(")");
+        }
+        if (orderByPosition != -1) {
+            String sortingType = sqlCommand.contains("DESC") ? "-1" : "1";
+            mongoCommand.append(".sort({").append(parseToken(sqlCommand, orderByPosition + 8)).append(": ").
+                    append(sortingType).append("})");
         }
         if (offsetPosition != -1)
             mongoCommand.append(".skip(").append(parseToken(sqlCommand, offsetPosition + 6)).append(")");

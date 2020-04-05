@@ -51,9 +51,16 @@ class SQLTranslatorTest {
     }
 
     @Test
-    public void invalidCommandTest(){
+    public void invalidCommandTest() {
         Assertions.assertEquals("", sqlTranslator.convert("name, age FROM customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
         Assertions.assertEquals("", sqlTranslator.convert("SELECT name, age customers WHERE age > 22 AND name = 'Vasya' OFFSET 50 LIMIT 10"));
+    }
+
+    @Test
+    public void orderByTest() {
+        Assertions.assertEquals("db.people.find({status: 'GT'}).sort({user_id: -1})", sqlTranslator.convert("SELECT * FROM people WHERE status = 'GT' ORDER BY user_id DESC"));
+        Assertions.assertEquals("db.people.find({status: 'GT'}).sort({user_id: 1})", sqlTranslator.convert("SELECT * FROM people WHERE status = 'GT' ORDER BY user_id ASC"));
+        Assertions.assertEquals("db.people.find({age: {$ne: 30}, status: 'GT'}, {name: 1}).sort({user_id: -1})", sqlTranslator.convert("SELECT name FROM people WHERE status = 'GT' AND age <> 30 ORDER BY user_id DESC"));
     }
 
 }
